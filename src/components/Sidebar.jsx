@@ -25,6 +25,7 @@ export default function Sidebar() {
 
   const menu = {
     superAdmin: [
+      { label: "Home", path: "/super-admin"},
       { label: "Manage Libraries", path: "/super-admin/libraries" },
       { label: "Manage Users", path: "/super-admin/users" },
       { label: "View Books", path: "/super-admin/books" },

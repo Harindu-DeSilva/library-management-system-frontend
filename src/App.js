@@ -4,6 +4,7 @@ import { useEffect } from "react";
 
 import LoginPage from "./pages/LoginPage";
 import ResetPassword from "./pages/ResetPassword";
+import ErrorPage from "./pages/ErrorPage";
 import Layout from './components/Layout';
 
 import SuperAdminHome from "./pages/superAdmin/SuperAdminHome";
@@ -43,8 +44,10 @@ function Private({ children, role }) {
     return <Navigate to="/dashboard" />;
   }
 
-  // Role-restricted routes
-  if (role && user.role !== role) return <Navigate to="/dashboard" />;
+   // Role-based protection (skip for 404 page)
+  if (role && user.role !== role && window.location.pathname !== "/404-error") {
+    return <Navigate to="/404-error" />;
+  }
 
   return children;
 }
@@ -218,6 +221,18 @@ export default function App() {
             </Private>
           }
         />
+
+
+        {/* error  */}
+        <Route
+          path="*"
+          element={
+            <Private>
+                <ErrorPage />
+            </Private>
+          }
+        />
+
       </Routes>
     </BrowserRouter>
   );
