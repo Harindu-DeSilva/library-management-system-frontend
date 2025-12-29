@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { meApi } from "../api/authApi";
+import { logoutApi } from "../api/authApi";
 
 export const useStore = create((set) => ({
 
@@ -17,6 +18,15 @@ export const useStore = create((set) => ({
     }
   },
 
-  logout: () => set({ user: null }),
+  logout: async () => {
+    try {
+      await logoutApi();   
+    } catch {}
+
+    set({ user: null });
+
+    window.location.replace("/"); // prevents back navigation
+  }
+,
 }));
 

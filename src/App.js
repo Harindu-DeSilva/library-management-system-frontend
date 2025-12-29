@@ -4,9 +4,25 @@ import { useEffect } from "react";
 
 import LoginPage from "./pages/LoginPage";
 import ResetPassword from "./pages/ResetPassword";
-import Dashboard from "./pages/Dashboard";
-import SuperAdmin from "./pages/SuperAdmin";
-import AdminDashboard from "./pages/AdminDashboard";
+import Layout from './components/Layout';
+
+import SuperAdminHome from "./pages/superAdmin/SuperAdminHome";
+import ManageLibraries from "./pages/superAdmin/ManageLibraries";
+import Books from "./pages/superAdmin/Books";
+import Categories from "./pages/superAdmin/Categories";
+import ManageUsers from "./pages/superAdmin/ManageUsers";
+import Profile from "./pages/superAdmin/Profile";
+
+import AdminHome from "./pages/admin/AdminHome";
+import AdminBooks from "./pages/admin/AdminBooks";
+import AdminCategories from "./pages/admin/AdminCategories";
+import AdminLibrary from "./pages/admin/AdminLibrary";
+import AdminProfile from "./pages/admin/AdminProfile";
+import AdminUsers from "./pages/admin/AdminUsers";
+
+import UserHome from "./pages/user/UserHome";
+
+
 
 function Private({ children, role }) {
   const { user, loading } = useStore();
@@ -57,28 +73,148 @@ export default function App() {
         />
 
         <Route
-          path="/dashboard"
+          path="/super-admin"
           element={
-            <Private>
-              <Dashboard />
+            <Private role="superAdmin">
+              <Layout>
+                <SuperAdminHome />
+              </Layout>
             </Private>
           }
         />
 
+        {/* super admin routes  */}
+        <Route
+          path="/super-admin/books"
+          element={
+            <Private role="superAdmin">
+              <Layout>
+                <Books />
+              </Layout>
+            </Private>
+          }
+        />
+
+        <Route
+          path="/super-admin/categories"
+          element={
+            <Private role="superAdmin">
+              <Layout>
+                <Categories />
+              </Layout>
+            </Private>
+          }
+        />
+
+        <Route
+          path="/super-admin/libraries"
+          element={
+            <Private role="superAdmin">
+              <Layout>
+                <ManageLibraries />
+              </Layout>
+            </Private>
+          }
+        />
+
+        <Route
+          path="/super-admin/users"
+          element={
+            <Private role="superAdmin">
+              <Layout>
+                <ManageUsers />
+              </Layout>
+            </Private>
+          }
+        />
+
+        <Route
+          path="/super-admin/profile"
+          element={
+            <Private role="superAdmin">
+              <Layout>
+                <Profile />
+              </Layout>
+            </Private>
+          }
+        />
+
+
+        {/* admin routes  */}
         <Route
           path="/admin"
           element={
             <Private role="admin">
-              <AdminDashboard />
+              <Layout>
+                <AdminHome />
+              </Layout>
+            </Private>
+          }
+        />
+
+         <Route
+          path="/admin/books"
+          element={
+            <Private role="admin">
+              <Layout>
+                <AdminBooks />
+              </Layout>
             </Private>
           }
         />
 
         <Route
-          path="/super-admin"
+          path="/admin/categories"
           element={
-            <Private role="superAdmin">
-              <SuperAdmin />
+            <Private role="admin">
+              <Layout>
+                <AdminCategories />
+              </Layout>
+            </Private>
+          }
+        />
+
+         <Route
+          path="/admin/library"
+          element={
+            <Private role="admin">
+              <Layout>
+                <AdminLibrary />
+              </Layout>
+            </Private>
+          }
+        />
+
+         <Route
+          path="/admin/profile"
+          element={
+            <Private role="admin">
+              <Layout>
+                <AdminProfile />
+              </Layout>
+            </Private>
+          }
+        />
+
+         <Route
+          path="/admin/users"
+          element={
+            <Private role="admin">
+              <Layout>
+                <AdminUsers />
+              </Layout>
+            </Private>
+          }
+        />
+
+        {/* user routes  */}
+        <Route
+          path="/dashboard"
+          element={
+            <Private role="user">
+              <Layout>
+                <UserHome />
+              </Layout>
             </Private>
           }
         />
