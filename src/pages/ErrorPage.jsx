@@ -5,7 +5,6 @@ import { AlertCircle } from "lucide-react";
 export default function ErrorPage() {
   const { user } = useStore();
 
-  // Determine home path based on user role
   let homePath = "/";
   if (user) {
     if (user.role === "superAdmin") homePath = "/super-admin";
