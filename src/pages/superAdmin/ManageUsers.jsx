@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { debounce } from "lodash";
 import { format } from "date-fns";
-import { getUsersApi, createUserApi, deleteUserApi } from "../../api/usersApi";
-import { getLibrariesApi } from "../../api/libraryApi";
+import {  createUserApi, deleteUserApi } from "../../api/usersApi";
+import useLibraries from "../../hooks/useLibraries";
 import { 
   Users, 
   UserPlus, 
@@ -20,6 +20,7 @@ import {
   AlertCircle,
   Loader2
 } from "lucide-react";
+import useUsers from "../../hooks/useUsers";
 
 // ---------- ENHANCED MODAL COMPONENT ----------
 function Modal({ title, children, onClose }) {
@@ -42,143 +43,91 @@ function Modal({ title, children, onClose }) {
   );
 }
 
-// ---------- MAIN COMPONENT ----------
 export default function ManageUsers() {
-  const [users, setUsers] = useState([]);
-
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalUsers, setTotalUsers] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
-  const [superAdminCount, setsuperAdminCount] = useState();
-  const [adminCount, setAdminCount] = useState();
-  const [userCount, setUserCount] = useState();
-  const [search, setSearch] = useState("");
-
-  const [loading, setLoading] = useState(false);
-
+ 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [deleteUserId, setDeleteUserId] = useState(null);
 
-  const [libraries, setLibraries] = useState([]);
-  const [libLoading, setLibLoading] = useState(false);
-  const [libError, setLibError] = useState(null);
 
+  // ---------------- USERS HOOK ----------------
+  const {
+    users,
+    page,
+    setPage,
+    totalPages,
+    totalUsers,
+    pageSize,
 
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    role: "admin",
-    password: "",
-    library_id: "",
-  });
+    searchText,
+    setSearchText,
 
-  // -------- FETCH USERS --------
-  const fetchUsers = useCallback(
-    async (pageNum = 1, searchText = "") => {
-      setLoading(true);
-      try {
-        const res = await getUsersApi(pageNum, pageSize, searchText);
+    superAdminCount,
+    adminCount,
+    userCount,
 
-        setUsers(res.data.users);
-        setTotalPages(res.data.pagination.totalPages);
-        setTotalUsers(res.data.pagination.totalUsers);
-        setPageSize(res.data.pagination.pageSize);
-        setAdminCount(res.data.stats.admins);
-        setsuperAdminCount(res.data.stats.superAdmins);
-        setUserCount(res.data.stats.users);
-      } catch (err) {
-        console.error(err.response?.data || err.message);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [pageSize]
-  );
+    loading,
+    actionLoading,
+    libLoading,
 
-  useEffect(() => {
-    fetchUsers(page, search);
-  }, [page, fetchUsers, search]);
+    formData,
+    setFormData,
 
-  const debouncedFetch = useCallback(
-  debounce((value) => {
-    fetchUsers(1, value); // always reset to page 1 when searching
-    setPage(1);
-  }, 500), // 500ms delay
-  [fetchUsers]
-);
-
-// handle search input change
-const handleSearchChange = (e) => {
-  setSearch(e.target.value);
-  debouncedFetch(e.target.value);
-};
+    fetchUsers,
+    createUser,
+    deleteUser
+  } = useUsers();
 
 
 
-  // -------- FETCH LIBRARIES --------
-  useEffect(() => {
-    const fetchLibraries = async () => {
-      setLibLoading(true);
-      try {
-        const res = await getLibrariesApi();
-        setLibraries(res.data.libraries || []);
-      } catch (err) {
-        setLibError("Failed to load libraries");
-      } finally {
-        setLibLoading(false);
-      }
-    };
+  // ---------------- LIBRARIES HOOK ----------------
+  const { libraries } = useLibraries();
 
-    fetchLibraries();
-  }, []);
 
   const getLibraryName = (id) => {
-    const lib = libraries.find(l => l.id === id);
+    const lib = libraries?.find(l => l.id === id);
     return lib ? lib.name : "N/A";
   };
 
 
-  // -------- CREATE USER --------
-  const handleSubmit = async (e) => {
+
+  // ---------------- FETCH USERS ----------------
+  useEffect(() => {
+    fetchUsers(page, searchText);
+  }, [page, searchText, fetchUsers]);
+
+
+
+  // ---------------- SEARCH LOGIC ----------------
+  const debouncedFetch = useCallback(
+    debounce((value) => {
+      setPage(1);
+      fetchUsers(1, value);
+    }, 500),
+    [fetchUsers]
+  );
+
+  const handleSearchChange = (e) => {
+    setSearchText(e.target.value);
+    debouncedFetch(e.target.value);
+  };
+
+
+
+  // ---------------- CREATE USER SUBMIT ----------------
+  const onSubmitCreate = async (e) => {
     e.preventDefault();
 
-    try {
-      await createUserApi({
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
-        library_id: formData.library_id,
-        role: formData.role,
-      });
+    const res = await createUser();
 
+    if (res?.success) {
       setShowCreateModal(false);
-
-      setFormData({
-        name: "",
-        email: "",
-        role: "admin",
-        password: "",
-        library_id: "",
-      });
-
-      fetchUsers(page);
-    } catch (err) {
-      console.error(err.response?.data || err.message);
-      alert(err.response?.data?.message || "Failed to create user");
+    } else {
+      alert(res?.message || "Error creating user");
     }
   };
 
-  // -------- DELETE USER --------
-  const handleDelete = async (id) => {
-    try {
-      await deleteUserApi(id);
-      fetchUsers(page);
-    } catch (err) {
-      console.error(err.response?.data || err.message);
-      alert(err.response?.data?.message || "Failed to delete user");
-    }
-  };
+  
+  
   return (
     <div className="min-h-screen bg-[#f8fafc] p-4 md:p-8 font-sans">
       
@@ -241,7 +190,7 @@ const handleSearchChange = (e) => {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
-                value={search}
+                value={searchText}
                 onChange={handleSearchChange}
                 placeholder="Search by name or email..."
                 className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all"
@@ -369,7 +318,7 @@ const handleSearchChange = (e) => {
       {/* ---------- CREATE MODAL ---------- */}
       {showCreateModal && (
         <Modal title="Register New Staff" onClose={() => setShowCreateModal(false)}>
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={onSubmitCreate} className="space-y-5">
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
               <div className="relative group">
@@ -435,7 +384,6 @@ const handleSearchChange = (e) => {
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 outline-none transition-all appearance-none cursor-pointer"
                 >
                   <option value="admin">Admin</option>
-                  <option value="librarian">Librarian</option>
                 </select>
               </div>
             </div>
@@ -478,7 +426,8 @@ const handleSearchChange = (e) => {
               </button>
               <button
                 onClick={async () => {
-                  await handleDelete(deleteUserId);
+                  const res = await deleteUser(deleteUserId);
+                  if(!res.success) alert(res.message);
                   setDeleteUserId(null);
                 }}
                 className="flex-1 py-3 px-4 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl shadow-lg shadow-rose-100 transition-all"

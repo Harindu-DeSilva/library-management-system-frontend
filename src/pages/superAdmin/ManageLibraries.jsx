@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { debounce } from "lodash";
+import React, { useState} from "react";
 import { format } from "date-fns";
-import { getLibrariesApi, createLibraryApi, updateLibraryApi, deleteLibraryApi } from "../../api/libraryApi";
+import {createLibraryApi, deleteLibraryApi } from "../../api/libraryApi";
+import useLibraries from "../../hooks/useLibraries";
 import { 
   LibraryBigIcon,
   Trash2, 
@@ -40,22 +40,14 @@ function Modal({ title, children, onClose }) {
   );
 }
 
-// ---------- MAIN COMPONENT ----------
+
 export default function ManageLibraries() {
 
   const [loading, setLoading] = useState(false);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [deleteLibraryId, setDeleteLibraryId] = useState(null);
-
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalLibraries, setTotalLibraries] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
-  const [libraries, setLibraries] = useState([]);
-  const [libLoading, setLibLoading] = useState(false);
-  const [libError, setLibError] = useState(null);
-
 
   const [formData, setFormData] = useState({
     name: "",
@@ -63,35 +55,10 @@ export default function ManageLibraries() {
     address: "",
   });
 
-
-
   // -------- FETCH LIBRARIES --------
- const fetchLibraries = useCallback(async () => {
-  setLibLoading(true);
-  try {
-    const res = await getLibrariesApi();
+  const {  libraries, libLoading, libError, totalPages, totalLibraries, pageSize, fetchLibraries } = useLibraries();
 
-    setLibraries(res.data.libraries || []);
-    setTotalPages(res.data.pagination.totalPages);
-    setTotalLibraries(res.data.pagination.totalLibraries);
-    setPageSize(res.data.pagination.pageSize);
-
-  } catch (err) {
-    setLibError("Failed to load libraries");
-  } finally {
-    setLibLoading(false);
-  }
-}, []);
-
-
-useEffect(() => {
-  fetchLibraries();
-}, [fetchLibraries]);
-
-
-
-
-  // -------- CREATE USER --------
+  // -------- CREATE LIBRARY --------
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -113,18 +80,18 @@ useEffect(() => {
       fetchLibraries();
     } catch (err) {
       console.error(err.response?.data || err.message);
-      alert(err.response?.data?.message || "Failed to create user");
+      alert(err.response?.data?.message || "Failed to create Library");
     }
   };
 
-  // -------- DELETE USER --------
+  // -------- DELETE LIBRARY --------
   const handleDelete = async (id) => {
     try {
       await deleteLibraryApi(id);
       fetchLibraries();
     } catch (err) {
       console.error(err.response?.data || err.message);
-      alert(err.response?.data?.message || "Failed to delete user");
+      alert(err.response?.data?.message || "Failed to delete Library");
     }
   };
   return (
@@ -359,7 +326,7 @@ useEffect(() => {
                 onClick={() => setDeleteLibraryId(null)}
                 className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition-colors"
               >
-                Keep User
+                Keep Library
               </button>
               <button
                 onClick={async () => {
