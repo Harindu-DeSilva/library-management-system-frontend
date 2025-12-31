@@ -21,6 +21,7 @@ import {
   Loader2
 } from "lucide-react";
 import useUsers from "../../hooks/useUsers";
+import { useStore } from "../../context/useStore";
 
 // ---------- ENHANCED MODAL COMPONENT ----------
 function Modal({ title, children, onClose }) {
@@ -44,10 +45,14 @@ function Modal({ title, children, onClose }) {
 }
 
 export default function ManageUsers() {
+
+  const { user } = useStore();
  
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [deleteUserId, setDeleteUserId] = useState(null);
 
+  const [errorCreateMessage, setErrorCreateMessage] = useState("");
+  const [errorDeleteMessage, setErrorDeleteMessage] = useState("");
 
   // ---------------- USERS HOOK ----------------
   const {
@@ -116,13 +121,13 @@ export default function ManageUsers() {
   // ---------------- CREATE USER SUBMIT ----------------
   const onSubmitCreate = async (e) => {
     e.preventDefault();
-
+    setErrorCreateMessage("");
     const res = await createUser();
 
     if (res?.success) {
       setShowCreateModal(false);
     } else {
-      alert(res?.message || "Error creating user");
+      setErrorCreateMessage(res?.message || "Error creating user");
     }
   };
 
@@ -136,19 +141,41 @@ export default function ManageUsers() {
         
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Staff Management</h1>
-            <p className="text-slate-500 mt-1 font-medium">Manage library administrators and access levels.</p>
+            {user.role === "admin" && ( 
+            <>
+              <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                User Management</h1>  
+              <p className="text-slate-500 mt-1 font-medium">Manage library users and access levels.</p>
+            </>
+            )}
+             {user.role === "superAdmin" && ( 
+            <>
+              <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                Staff Management</h1>  
+              <p className="text-slate-500 mt-1 font-medium">Manage library staff and access levels.</p>
+            </>
+            )}
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
             className="flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-100 transition-all active:scale-[0.98]"
           >
             <UserPlus className="w-5 h-5" />
-            <span>Add New Staff</span>
+            {user.role === "superAdmin" && ( 
+              <>
+                <span>Add New Staff</span>
+              </>
+            )}
+            {user.role === "admin" && ( 
+              <>
+                <span>Add New User</span>
+              </>
+            )}
           </button>
         </div>
 
         {/* Quick Stats Cards */}
+        {user.role === "superAdmin" && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
              { 
@@ -181,6 +208,7 @@ export default function ManageUsers() {
             </div>
           ))}
         </div>
+        )}
 
 
         {/* Data Table Section */}
@@ -373,7 +401,21 @@ export default function ManageUsers() {
 
                 >
                   <option value="">{libLoading ? "Loading..." : "Select Branch"}</option>
-                  {libraries.map((lib) => <option key={lib.id} value={lib.id}>{lib.name}</option>)}
+                  
+                  {user.role === "superAdmin" && ( 
+                    <>
+                    {libraries.map((lib) => 
+                      <option key={lib.id} value={lib.id}>{lib.name}</option>
+                    )}
+                    </>
+                  )}
+                  {user.role === "admin" && ( 
+                    <>
+                    <option value={user.library_id}>
+                    {libraries.find(l => l.id === user.library_id)?.name || "My Library"}
+                  </option>
+                    </>
+                  )}
                 </select>
               </div>
               <div className="space-y-1">
@@ -384,7 +426,12 @@ export default function ManageUsers() {
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 outline-none transition-all appearance-none cursor-pointer"
                 >
                   <option value="">--select option--</option>
+                  {user.role === "superAdmin" && (
                   <option value="admin">Admin</option>
+                  )}
+                  {user.role === "admin" && (
+                  <option value="user">User</option>
+                  )}
                 </select>
               </div>
             </div>
@@ -404,6 +451,11 @@ export default function ManageUsers() {
                 <span>Create Staff Account</span>
               </button>
             </div>
+            {errorCreateMessage && (
+              <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+                {errorCreateMessage}
+              </div>
+            )}
           </form>
         </Modal>
       )}
@@ -427,8 +479,9 @@ export default function ManageUsers() {
               </button>
               <button
                 onClick={async () => {
+                  setErrorDeleteMessage("");
                   const res = await deleteUser(deleteUserId);
-                  if(!res.success) alert(res.message);
+                  if(!res.success) setErrorDeleteMessage(res.message);
                   setDeleteUserId(null);
                 }}
                 className="flex-1 py-3 px-4 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl shadow-lg shadow-rose-100 transition-all"
@@ -436,6 +489,11 @@ export default function ManageUsers() {
                 Revoke Access
               </button>
             </div>
+            {errorDeleteMessage && (
+              <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+                {errorDeleteMessage}
+              </div>
+            )}
           </div>
         </Modal>
       )}
