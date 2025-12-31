@@ -16,8 +16,6 @@ import Profile from "./pages/superAdmin/Profile";
 
 import AdminHome from "./pages/admin/AdminHome";
 import AdminBooks from "./pages/admin/AdminBooks";
-import AdminCategories from "./pages/admin/AdminCategories";
-import AdminLibrary from "./pages/admin/AdminLibrary";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminUsers from "./pages/admin/AdminUsers";
 
@@ -171,22 +169,12 @@ export default function App() {
           element={
             <Private role="admin">
               <Layout>
-                <AdminCategories />
+                <Categories />
               </Layout>
             </Private>
           }
         />
 
-         <Route
-          path="/admin/library"
-          element={
-            <Private role="admin">
-              <Layout>
-                <AdminLibrary />
-              </Layout>
-            </Private>
-          }
-        />
 
          <Route
           path="/admin/profile"

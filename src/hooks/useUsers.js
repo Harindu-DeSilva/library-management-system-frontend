@@ -28,7 +28,7 @@ export default function useUsers() {
     name: "",
     email: "",
     password: "",
-    role: "user",
+    role: "",
     library_id: ""
   });
 

@@ -36,7 +36,6 @@ export default function Sidebar() {
     admin: [
       { label: "Home", path: "/admin" },
       { label: "Users", path: "/admin/users" },
-      { label: "Library", path: "/admin/library" },
       { label: "Books", path: "/admin/books" },
       { label: "Categories", path: "/admin/categories" },
       { label: "Profile", path: "/admin/profile" },

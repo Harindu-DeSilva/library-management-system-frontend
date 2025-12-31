@@ -1,67 +1,167 @@
-import { useState, useEffect } from "react";
-import { getCategoriesApi } from "../api/categoryApi";
+import { useState, useEffect, useCallback } from "react";
+import { 
+  getCategoriesApi, 
+  createCategoryApi,
+  deleteCategoryApi,
+  updateCategoryApi
+} from "../api/categoryApi";
 
 export default function useCategories() {
 
+  const [categories, setCategories] = useState([]);
+
+  // ---- Pagination ----
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCategories, setTotalCategories] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
-  const [categories, setCategories] = useState([]);
-  const [catLoading, setCatLoading] = useState(false);
-  const [catError, setCatError] = useState(null);
+
+  // ---- Library Filter ----
   const [selectedLibrary, setSelectedLibrary] = useState("");
 
-  useEffect(() => {
+  // ---- UI ----
+  const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
-    // Do nothing until a library is selected
+  // ---- Create Form ----
+  const [formData, setFormData] = useState({
+    category_name: ""
+  });
+
+
+  // FETCH CATEGORIES
+  const fetchCategories = useCallback(async (pageNum = 1) => {
+
+    // Stop until library is selected
     if (!selectedLibrary) {
       setCategories([]);
       setTotalCategories(0);
       return;
     }
 
-    const fetchCategories = async () => {
-      setCatLoading(true);
-      setCatError(null);
+    try {
+      setLoading(true);
 
-      try {
-        const res = await getCategoriesApi(selectedLibrary, page);
+      const res = await getCategoriesApi(selectedLibrary, pageNum);
 
-        setCategories(res.data.categories || []);
-        setTotalPages(res.data.pagination.totalPages);
-        setTotalCategories(res.data.pagination.totalCategories);
-        setPageSize(res.data.pagination.pageSize);
+      setCategories(res.data.categories || []);
+      setTotalPages(res.data.pagination.totalPages);
+      setTotalCategories(res.data.pagination.totalCategories);
+      setPageSize(res.data.pagination.pageSize);
 
-      } catch (err) {
+    } catch (err) {
 
-        if (err.response?.status === 404) {
-          setCategories([]);
-          setTotalCategories(0);
-          setCatError("No categories found for this library.");
-        } else {
-          setCatError("Failed to load categories");
-        }
-
-      } finally {
-        setCatLoading(false);
+      if (err.response?.status === 404) {
+        setCategories([]);
+        setTotalCategories(0);
       }
-    };
 
-    fetchCategories();
+      console.error(err.response?.data || err.message);
 
-  }, [selectedLibrary, page]);  
+    } finally {
+      setLoading(false);
+    }
+
+  }, [selectedLibrary, pageSize]);
+
+
+  // CREATE CATEGORY
+  const createCategory = async () => {
+    try {
+      setActionLoading(true);
+
+      await createCategoryApi(formData);
+
+      await fetchCategories(page);
+
+      return { success: true };
+
+    } catch (err) {
+      return {
+        success: false,
+        message: err.response?.data?.message || err.message
+      };
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+
+  // UPDATE CATEGORY
+  const updateCategory = async (id) => {
+    try {
+      setActionLoading(true);
+
+      await updateCategoryApi(id,formData);
+
+      await fetchCategories(page);
+
+      return { success: true };
+
+    } catch (err) {
+      return {
+        success: false,
+        message: err.response?.data?.message || err.message
+      };
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+
+  // DELETE CATEGORY
+  const deleteCategory = async (id) => {
+    try {
+      setActionLoading(true);
+
+      await deleteCategoryApi(id);
+      await fetchCategories(page);
+
+      return { success: true };
+
+    } catch (err) {
+
+      console.error(err.response?.data || err.message);
+
+      return {
+        success: false,
+        message: err.response?.data?.message || err.message
+      };
+
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+
+  // INIT FETCH WHEN LIBRARY OR PAGE CHANGES
+  useEffect(() => {
+    fetchCategories(page);
+  }, [page, selectedLibrary, fetchCategories]);
+
 
   return {
+    categories,
+
     page,
     setPage,
+
     totalPages,
     totalCategories,
     pageSize,
-    categories,
-    catLoading,
-    catError,
+
     selectedLibrary,
     setSelectedLibrary,
+
+    loading,
+    actionLoading,
+
+    formData,
+    setFormData,
+
+    fetchCategories,
+    createCategory,
+    updateCategory,
+    deleteCategory
   };
 }

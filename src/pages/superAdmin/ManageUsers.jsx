@@ -383,6 +383,7 @@ export default function ManageUsers() {
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 outline-none transition-all appearance-none cursor-pointer"
                 >
+                  <option value="">--select option--</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { format } from "date-fns";
 import useLibraries from "../../hooks/useLibraries";
+import { useStore } from "../../context/useStore";
 import { 
   IdCardLanyardIcon,
   ChevronDown,
@@ -8,23 +9,106 @@ import {
   Search, 
   AlertCircle,
   Tags,
+  Trash2,
+  X,
+  EditIcon,
   ChevronLeft, 
   ChevronRight, 
-  Clock, 
+  Clock,  
+  Users, 
+  CheckCircle2,
+  Loader2,
+  Edit2
 } from "lucide-react";
 import useCategories from "../../hooks/useCategories";
+import useUsers from "../../hooks/useUsers";
 
+// ---------- ENHANCED MODAL COMPONENT ----------
+function Modal({ title, children, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
+      <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="h-1.5 w-full bg-gradient-to-r from-indigo-600 to-emerald-500" />
+        <div className="p-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-slate-900">{title}</h2>
+            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-600">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 
 export default function Categories() {
 
+  
+  const { user } = useStore();
+
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+
+
   const [loading, setLoading] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  
+  const [deleteCategoryId, setDeleteCategoryId] = useState(null);
+
+  const [errorMessage, setErrorMessage] = useState("");
+
+
+  const { users } = useUsers();
+
 
   // -------- FETCH CATEGORIES --------
-  const { page, setPage, totalPages, totalCategories, pageSize, categories, catLoading, catError, selectedLibrary, setSelectedLibrary } = useCategories();
+  const { page, setPage, totalPages, totalCategories, pageSize, categories, catLoading, catError, selectedLibrary,formData,
+    setFormData, fetchCategories,
+    createCategory,
+    deleteCategory, setSelectedLibrary, updateCategory } = useCategories();
+
 
   // -------- FETCH LIBRARIES --------
   const { libraries, libLoading, libError } = useLibraries();
+
+    // ---------------- CREATE CATEGORY SUBMIT ----------------
+  const onSubmitCreate = async (e) => {
+    e.preventDefault();
+
+    setErrorMessage("");
+    const res = await createCategory();
+
+    if (res?.success) {
+      setShowCreateModal(false);
+    } else {
+      setErrorMessage(res?.message || "Error creating category");
+    }
+  };
+
+  const onSubmitUpdate = async (e) => {
+  e.preventDefault();
+
+  try {
+    setLoading(true);
+    setErrorMessage("");
+    const res = await updateCategory(selectedCategoryId);
+
+    if(res?.success){
+      setShowUpdateModal(false);
+    }else{
+      setErrorMessage(res?.message || "Error updating category");
+    }
+
+  } catch (err) {
+    setErrorMessage(err?.message || "update failed!");
+  } finally {
+    setLoading(false);
+  }
+};
 
 
   return (
@@ -38,6 +122,15 @@ export default function Categories() {
             <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Category Management</h1>
             <p className="text-slate-500 mt-1 font-medium">Manage categories.</p>
           </div>
+          {user.role === "admin" && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-100 transition-all active:scale-[0.98]"
+            >
+              <Tags className="w-5 h-5" />
+              <span>Add New Category</span>
+            </button>
+          )}
         </div>
 
         {/* Quick Stats Cards */}
@@ -92,12 +185,25 @@ export default function Categories() {
                 onChange={(e) => setSelectedLibrary(e.target.value)}
                 className="w-full pl-11 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all cursor-pointer appearance-none font-medium text-slate-700 shadow-sm"
               >
-                <option value="">All Library Branches</option>
-                {libraries.map((lib) => (
-                  <option key={lib.id} value={lib.id}>
-                    {lib.name}
+                {user.role === "superAdmin" && (
+                  <>
+                  <option value="">All Library Branches</option>
+                  
+                  {libraries.map((lib) => (
+                    <option key={lib.id} value={lib.id}>
+                      {lib.name}
+                    </option>
+                  ))}
+                  </>
+                )}
+                {user.role === "admin" && (
+                  <>
+                  <option value="">All Library Branches</option>
+                  <option value={user.library_id}>
+                    {libraries.find(l => l.id === user.library_id)?.name || "My Library"}
                   </option>
-                ))}
+                  </>
+                )}
               </select>
 
               <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none transition-transform group-focus-within:rotate-180" />
@@ -111,9 +217,14 @@ export default function Categories() {
               <thead>
                 <tr className="text-slate-400 text-xs font-bold uppercase tracking-widest border-b border-slate-50">
                   <th className="px-8 py-5">Category Identity</th>
-                  <th className="px-6 py-5">library id</th>
-                  <th className="px-6 py-5">admin id</th>
+                  <th className="px-6 py-5">library name</th>
+                  {user.role === "superAdmin" && (
+                  <th className="px-6 py-5">library admin</th>
+                  )}
                   <th className="px-6 py-5">Created Time</th>
+                  {user.role === "admin" && (
+                  <th className="px-8 py-5 text-right">Actions</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -158,21 +269,47 @@ export default function Categories() {
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-2 text-slate-600 font-medium text-sm">
                           <IdCardLanyardIcon className="w-4 h-4 text-slate-300" />
-                          {category.library_id}
+                          {libraries.find(l => l.id === category.library_id)?.name || "My Library"}
                         </div>
                       </td>
+                      {user.role === "superAdmin" && (
                       <td className="px-6 py-5">
                         <div className="flex items-center  text-slate-600 font-medium text-sm">
                           <IdCardLanyardIcon className="w-4 h-4 text-slate-300" />
-                          {category.admin_id}
+                           {users?.length > 0
+                            ? users.find(u => u.id === category.admin_id)?.name || "N/A"
+                            : "Loading..."}
                         </div>
                       </td>
+                      )}
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-2 text-slate-600 font-medium text-sm">
                           <Clock className="w-4 h-4 text-slate-300" />
                           {format(new Date(category.createdAt), "dd MMM yyyy, HH:mm")}
                         </div>
                       </td>
+                       {user.role === "admin" && (
+                       <td className="px-8 py-5 text-right">
+                         <button
+                         onClick={() => {
+                            setSelectedCategoryId(category.id);
+                            setFormData({
+                              category_name: category.category_name
+                            });
+                            setShowUpdateModal(true);
+                          }}
+                          className="p-2 text-slate-300 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
+                        >
+                          <EditIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteCategoryId(category.id)}
+                          className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </td>
+                       )}
                     </tr>
                   ))
                 )}
@@ -207,6 +344,146 @@ export default function Categories() {
           </div>
         </div>
       </div>
+      {/* ---------- CREATE MODAL ---------- */}
+      {showCreateModal && (
+        <Modal title="Register New Category" onClose={() => setShowCreateModal(false)}>
+          <form onSubmit={onSubmitCreate} className="space-y-5">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Category Name</label>
+              <div className="relative group">
+                <Users className="absolute left-4 top-3.5 w-5 h-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                <input
+                  type="text" placeholder="e.g. Fictions"
+                  className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-600 outline-none transition-all"
+                  value={formData.category_name}
+                  onChange={(e) => setFormData({ ...formData, category_name: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+            {errorMessage && (
+              <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+                {errorMessage}
+              </div>
+            )}
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button" onClick={() => setShowCreateModal(false)}
+                className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition-colors"
+              >
+                Discard
+              </button>
+              <button
+                type="submit" disabled={loading}
+                className="flex-2 py-3 px-8 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2"
+              >
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+                <span>Create</span>
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* update model  */}
+      {showUpdateModal && (
+        <Modal
+          title="Update Category"
+          onClose={() => setShowUpdateModal(false)}
+        >
+          <form onSubmit={onSubmitUpdate} className="space-y-5">
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
+                Category Name
+              </label>
+
+              <div className="relative group">
+                <Tags className="absolute left-4 top-3.5 w-5 h-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                <input
+                  type="text"
+                  placeholder="e.g. Fictions"
+                  className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-600 outline-none transition-all"
+                  value={formData.category_name}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      category_name: e.target.value
+                    })
+                  }
+                  required
+                />
+              </div>
+            </div>
+            {errorMessage && (
+              <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+                {errorMessage}
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowUpdateModal(false)}
+                className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-2 py-3 px-8 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2"
+              >
+                {loading
+                  ? <Loader2 className="w-5 h-5 animate-spin" />
+                  : <CheckCircle2 className="w-5 h-5" />}
+                <span>Update</span>
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+
+      {/* ---------- DELETE CONFIRM MODAL ---------- */}
+      {deleteCategoryId && (
+        <Modal title="Revoke Access?" onClose={() => setDeleteCategoryId(null)}>
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mb-2">
+              <AlertCircle className="w-8 h-8 text-rose-600" />
+            </div>
+            <p className="text-slate-600 leading-relaxed font-medium">
+              Are you sure you want to remove this category? This action is <span className="text-rose-600 font-bold">permanent</span> and will immediately revoke their system access.
+            </p>
+            <div className="flex w-full gap-3 mt-4">
+              <button
+                onClick={() => setDeleteCategoryId(null)}
+                className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition-colors"
+              >
+                Keep Category
+              </button>
+              <button
+                onClick={async () => {
+                  const res = await deleteCategory(deleteCategoryId);
+                  setErrorMessage("");
+                  if(!res.success) setErrorMessage(res.message || "Error deleting category");
+                  setDeleteCategoryId(null);
+                }}
+                className="flex-1 py-3 px-4 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl shadow-lg shadow-rose-100 transition-all"
+              >
+                Revoke Access
+              </button>
+            </div>
+            {errorMessage && (
+              <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+                {errorMessage}
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
+      
     </div>
   );
 }
