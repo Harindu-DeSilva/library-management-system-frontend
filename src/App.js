@@ -15,8 +15,6 @@ import ManageUsers from "./pages/superAdmin/ManageUsers";
 import Profile from "./pages/superAdmin/Profile";
 
 import AdminHome from "./pages/admin/AdminHome";
-import AdminBooks from "./pages/admin/AdminBooks";
-import AdminProfile from "./pages/admin/AdminProfile";
 
 import UserHome from "./pages/user/UserHome";
 
@@ -157,7 +155,7 @@ export default function App() {
           element={
             <Private role="admin">
               <Layout>
-                <AdminBooks />
+                <Books />
               </Layout>
             </Private>
           }
@@ -180,7 +178,7 @@ export default function App() {
           element={
             <Private role="admin">
               <Layout>
-                <AdminProfile />
+                <Profile />
               </Layout>
             </Private>
           }

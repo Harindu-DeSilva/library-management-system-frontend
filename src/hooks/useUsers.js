@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { getUsersApi, createUserApi, deleteUserApi } from "../api/usersApi";
+import { getUsersApi, createUserApi, deleteUserApi, updateUserApi, getUserByIdApi } from "../api/usersApi";
+import { meApi, updatePasswordApi } from "../api/authApi";
 
 export default function useUsers() {
 
@@ -30,6 +31,12 @@ export default function useUsers() {
     password: "",
     role: "",
     library_id: ""
+  });
+
+   const [PasswordFormData, setPasswordFormData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: ""
   });
 
   // FETCH USERS
@@ -75,6 +82,52 @@ export default function useUsers() {
       setActionLoading(false);
     }
   };
+
+
+   // UPDATE USER
+  const updateUser = async (id) => {
+    try {
+      setActionLoading(true);
+
+      await updateUserApi(id,formData);
+
+      await getUserByIdApi(id);
+
+      return { success: true };
+
+    } catch (err) {
+      return {
+        success: false,
+        message: err.response?.data?.message || err.message
+      };
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+
+
+   // UPDATE USER PASSWORD
+  const updateUserPassword = async () => {
+    try {
+      setActionLoading(true);
+
+      await updatePasswordApi(PasswordFormData);
+
+      await meApi();
+
+      return { success: true };
+
+    } catch (err) {
+      return {
+        success: false,
+        message: err.response?.data?.message || err.message
+      };
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
 
 
   // DELETE USER
@@ -126,10 +179,15 @@ export default function useUsers() {
     loading,
     actionLoading,
 
+    PasswordFormData, 
+    setPasswordFormData,
+
     formData,
     setFormData,
 
+    updateUserPassword,
     fetchUsers,
+    updateUser,
     createUser,
     deleteUser
   };

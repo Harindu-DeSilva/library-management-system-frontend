@@ -8,23 +8,79 @@ import {
   Search, 
   AlertCircle,
   Tags,
+  User2,
+  X,CheckCircle2,Loader2,
+  Book,
   ChevronLeft, 
   ChevronRight, 
   Clock, 
 } from "lucide-react";
+import useBooks from "../../hooks/useBooks";
 import useCategories from "../../hooks/useCategories";
+import { useStore } from "../../context/useStore";
 
 
+// ---------- ENHANCED MODAL COMPONENT ----------
+function Modal({ title, children, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
+      <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="h-1.5 w-full bg-gradient-to-r from-indigo-600 to-emerald-500" />
+        <div className="p-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-slate-900">{title}</h2>
+            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-600">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Books() {
 
+  const { user } = useStore();
   const [loading, setLoading] = useState(false);
+  
+  const [deleteBookId, setDeleteBookId] = useState(null);
 
-  // -------- FETCH CATEGORIES --------
-  const { page, setPage, totalPages, totalCategories, pageSize, categories, catLoading, catError, selectedLibrary, setSelectedLibrary } = useCategories();
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [errorCreateMessage, setErrorCreateMessage] = useState("");
+  const [errorDeleteMessage, setErrorDeleteMessage] = useState("");
+
+  // -------- FETCH BOOKS --------
+  const { page, setPage, totalPages, totalBooks, pageSize, books, catLoading,formData, setFormData,catError, selectedCategory, setSelectedCategory, createBook, deleteBook } = useBooks();
+
+
+  const {  categories, selectedLibrary, setSelectedLibrary } = useCategories();
+  
 
   // -------- FETCH LIBRARIES --------
   const { libraries, libLoading, libError } = useLibraries();
+
+  const getLibraryName = (id) => {
+    const lib = libraries?.find(l => l.id === id);
+    return lib ? lib.name : "N/A";
+  };
+
+
+
+    // ---------------- CREATE USER SUBMIT ----------------
+  const onSubmitCreate = async (e) => {
+    e.preventDefault();
+    setErrorCreateMessage("");
+    const res = await createBook();
+
+    if (res?.success) {
+      setShowCreateModal(false);
+    } else {
+      setErrorCreateMessage(res?.message || "Error creating user");
+    }
+  };
 
 
   return (
@@ -38,14 +94,24 @@ export default function Books() {
             <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Book Management</h1>
             <p className="text-slate-500 mt-1 font-medium">Manage books.</p>
           </div>
+          {user.role === "admin" && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-100 transition-all active:scale-[0.98]"
+            >
+              <Tags className="w-5 h-5" />
+              <span>Add New Book</span>
+            </button>
+          )}
         </div>
+        
 
         {/* Quick Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
              { 
               label: `Categories`, 
-              value:  categories.length,
+              value:  books.length,
               icon: <Tags className="text-amber-600" />, 
               bg: 'bg-amber-50' 
           },
@@ -68,40 +134,79 @@ export default function Books() {
         <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
           <div className="p-6 border-b border-slate-50 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/50">
       
-          {/* Search Input - Left Side */}
-          <div className="relative w-full max-w-sm">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-            <input
-              type="text"
-              placeholder="Search by name or email..."
-              className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-400 font-medium shadow-sm"
-            />
-          </div>
-
-            {/* Library Selection - Right Side */}
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <span className="hidden lg:block text-xs font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
-              Filter By:
-            </span>
-            
-            <div className="relative w-full md:w-64 group">
-              <Library className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors pointer-events-none z-10" />
-              
-              <select
-                value={selectedLibrary}
-                onChange={(e) => setSelectedLibrary(e.target.value)}
-                className="w-full pl-11 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all cursor-pointer appearance-none font-medium text-slate-700 shadow-sm"
-              >
-                <option value="">All Library Branches</option>
-                {libraries.map((lib) => (
-                  <option key={lib.id} value={lib.id}>
-                    {lib.name}
-                  </option>
-                ))}
-              </select>
-
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none transition-transform group-focus-within:rotate-180" />
+            {/* Search Input - Left Side */}
+            <div className="relative w-full max-w-sm">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+              <input
+                type="text"
+                placeholder="Search by name or email..."
+                className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-400 font-medium shadow-sm"
+              />
             </div>
+
+            {/* Library Selection - middle*/}
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <span className="hidden lg:block text-xs font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                Filter Library:
+              </span>
+              
+              <div className="relative w-full md:w-64 group">
+                <Library className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors pointer-events-none z-10" />
+                
+                <select
+                  value={selectedLibrary}
+                  onChange={(e) => setSelectedLibrary(e.target.value)}
+                  className="w-full pl-11 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all cursor-pointer appearance-none font-medium text-slate-700 shadow-sm"
+                >
+                   {user.role === "superAdmin" && (
+                  <>
+                  <option value="">All Library Branches</option>
+                  
+                  {libraries.map((lib) => (
+                    <option key={lib.id} value={lib.id}>
+                      {lib.name}
+                    </option>
+                  ))}
+                  </>
+                )}
+                {user.role === "admin" && (
+                  <>
+                  <option value="">All Library Branches</option>
+                  <option value={user.library_id}>
+                    {libraries.find(l => l.id === user.library_id)?.name || "My Library"}
+                  </option>
+                  </>
+                )}
+                </select>
+
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none transition-transform group-focus-within:rotate-180" />
+              </div>
+            </div>
+
+            {/* Category Selection - Right Side */}
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <span className="hidden lg:block text-xs font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                Filter Category:
+              </span>
+              
+              <div className="relative w-full md:w-64 group">
+                <Library className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors pointer-events-none z-10" />
+                
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full pl-11 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all cursor-pointer appearance-none font-medium text-slate-700 shadow-sm"
+                >
+                  <option value="">All Categories</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.category_name}
+                    </option>
+                  ))}
+                </select>
+
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none transition-transform group-focus-within:rotate-180" />
+              </div>
             </div>
           </div>
 
@@ -111,9 +216,12 @@ export default function Books() {
               <thead>
                 <tr className="text-slate-400 text-xs font-bold uppercase tracking-widest border-b border-slate-50">
                   <th className="px-8 py-5">Book Identity</th>
+                  <th className="px-8 py-5">author</th>
                   <th className="px-6 py-5">category id</th>
                   <th className="px-6 py-5">library id</th>
+                  <th className="px-6 py-5">status</th>
                   <th className="px-6 py-5">Created Time</th>
+                  <th className="px-6 py-5 text-right">actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -127,10 +235,10 @@ export default function Books() {
                     </tr>
                   ))
 
-                  ) : categories.length === 0 ? (
+                  ) : books.length === 0 ? (
 
                     <tr>
-                      <td colSpan={4} className="px-8 py-10 text-center">
+                      <td colSpan={7} className="px-8 py-10 text-center">
                         <div className="flex flex-col items-center gap-2 text-slate-500">
                           <AlertCircle className="w-6 h-6 text-slate-400" />
                           <p className="font-semibold">
@@ -142,35 +250,47 @@ export default function Books() {
 
                   ) : (
 
-                  categories.map((category) => (
-                    <tr key={category.id} className="group hover:bg-slate-50/50 transition-colors">
+                  books.map((book) => (
+                    <tr key={book.id} className="group hover:bg-slate-50/50 transition-colors">
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-4">
                           <div className={`w-10 h-10 rounded-full  flex items-center justify-center font-bold bg-amber-50 text-amber-700 border-amber-200`}>
-                            {category.category_name.charAt(0)}
+                            <img src={book.image} alt={book.title} className="w-full h-full object-cover" /> 
                           </div>
                           <div>
-                            <p className="font-bold text-slate-900">{category.category_name}</p>
-                            <p className="text-xs text-slate-400 font-medium">{category.id}</p>
+                            <p className="font-bold text-slate-900">{book.title}</p>
+                            <p className="text-xs text-slate-400 font-medium">{book.id}</p>
                           </div>
                         </div>
                       </td> 
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-2 text-slate-600 font-medium text-sm">
                           <IdCardLanyardIcon className="w-4 h-4 text-slate-300" />
-                          {category.library_id}
+                          {book.author}
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-2 text-slate-600 font-medium text-sm">
+                          <IdCardLanyardIcon className="w-4 h-4 text-slate-300" />
+                          {book.category_id}
                         </div>
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex items-center  text-slate-600 font-medium text-sm">
                           <IdCardLanyardIcon className="w-4 h-4 text-slate-300" />
-                          {category.admin_id}
+                          {book.library_id}
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex items-center  text-slate-600 font-medium text-sm">
+                          <IdCardLanyardIcon className="w-4 h-4 text-slate-300" />
+                          {book.status}
                         </div>
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-2 text-slate-600 font-medium text-sm">
                           <Clock className="w-4 h-4 text-slate-300" />
-                          {format(new Date(category.createdAt), "dd MMM yyyy, HH:mm")}
+                          {format(new Date(book.createdAt), "dd MMM yyyy, HH:mm")}
                         </div>
                       </td>
                     </tr>
@@ -183,7 +303,7 @@ export default function Books() {
           {/* Styled Pagination */}
           <div className="px-8 py-6 border-t border-slate-50 flex items-center justify-between bg-slate-50/30">
             <p className="text-sm text-slate-500 font-medium">
-              Showing <span className="text-slate-900 font-bold">{(page-1)*pageSize + 1}-{Math.min(page*pageSize, totalCategories)}</span> of <span className="text-slate-900 font-bold">{totalCategories}</span> Categories
+              Showing <span className="text-slate-900 font-bold">{(page-1)*pageSize + 1}-{Math.min(page*pageSize, totalBooks)}</span> of <span className="text-slate-900 font-bold">{totalBooks}</span> Categories
             </p>
             <div className="flex gap-2">
               <button
@@ -207,6 +327,169 @@ export default function Books() {
           </div>
         </div>
       </div>
+
+      {/* ---------- CREATE MODAL ---------- */}
+      {showCreateModal && (
+        <Modal title="Register New Book" onClose={() => setShowCreateModal(false)}>
+          <form onSubmit={onSubmitCreate} className="space-y-5" >
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Title</label>
+              <div className="relative group">
+                <Book className="absolute left-4 top-3.5 w-5 h-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                <input
+                  type="text" placeholder="e.g. Harry Potter"
+                  className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-600 outline-none transition-all"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Author</label>
+              <div className="relative group">
+                <User2 className="absolute left-4 top-3.5 w-5 h-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                <input
+                  type="text" placeholder="J.K. Rowling"
+                  className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-600 outline-none transition-all"
+                  value={formData.author}
+                  onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Select Library</label>
+              <div className="relative group">
+                <select
+                  value={selectedLibrary}
+                  onChange={(e) => setSelectedLibrary(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 outline-none transition-all appearance-none cursor-pointer"
+                  required
+                  disabled={libLoading}
+
+                >
+                  <option value="">{libLoading ? "Loading..." : "Select Library"}</option>
+                  
+                  {user.role === "admin" && ( 
+                      <option key={user.library_id} value={user.library_id}>{getLibraryName(user.library_id)}</option>
+                  )}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Assign Category</label>
+                <select
+                  value={formData.category_id}
+                  onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 outline-none transition-all appearance-none cursor-pointer"
+                  required
+                  disabled={libLoading}
+
+                >
+                  <option value="">{libLoading ? "Loading..." : "Select Category"}</option>
+                  
+                  {user.role === "admin" && ( 
+                    <>
+                    {categories.map((cat) => 
+                      <option key={cat.id} value={cat.id}>{cat.category_name}</option>
+                    )}
+                    </>
+                  )}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
+                 Book Cover
+                </label>
+                
+                <div className="relative group">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      setFormData({ ...formData, image: e.target.files[0] })
+                    }
+                    className="block w-full text-sm text-slate-500
+                      file:mr-4 file:py-3 file:px-6
+                      file:rounded-xl file:border-0
+                      file:text-sm file:font-bold
+                      file:bg-slate-900 file:text-white
+                      hover:file:bg-slate-800
+                      file:cursor-pointer cursor-pointer
+                      bg-white border border-slate-200 rounded-xl
+                      focus:ring-4 focus:ring-indigo-50 focus:border-indigo-600
+                      transition-all outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button" onClick={() => setShowCreateModal(false)}
+                className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition-colors"
+              >
+                Discard
+              </button>
+              <button
+                type="submit" disabled={loading}
+                className="flex-2 py-3 px-8 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2"
+              >
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+                <span>Create Staff Account</span>
+              </button>
+            </div>
+            {errorCreateMessage && (
+              <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+                {errorCreateMessage}
+              </div>
+            )}
+          </form>
+        </Modal>
+      )}
+
+      {/* ---------- DELETE CONFIRM MODAL ---------- */}
+      {deleteBookId && (
+        <Modal title="Revoke Access?" onClose={() => setDeleteBookId(null)}>
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mb-2">
+              <AlertCircle className="w-8 h-8 text-rose-600" />
+            </div>
+            <p className="text-slate-600 leading-relaxed font-medium">
+              Are you sure you want to remove this book? This action is <span className="text-rose-600 font-bold">permanent</span> and will immediately revoke their system access.
+            </p>
+            <div className="flex w-full gap-3 mt-4">
+              <button
+                onClick={() => setDeleteBookId(null)}
+                className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition-colors"
+              >
+                Keep Book
+              </button>
+              <button
+                onClick={async () => {
+                  setErrorDeleteMessage("");
+                  const res = await deleteBook(deleteBookId);
+                  if(!res.success) setErrorDeleteMessage(res.message);
+                  setDeleteBookId(null);
+                }}
+                className="flex-1 py-3 px-4 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl shadow-lg shadow-rose-100 transition-all"
+              >
+                Revoke Access
+              </button>
+            </div>
+            {errorDeleteMessage && (
+              <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+                {errorDeleteMessage}
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
+
     </div>
   );
 }
