@@ -168,7 +168,7 @@ export default function ManageLibraries() {
                 {loading ? (
                   Array(3).fill(0).map((_, i) => (
                     <tr key={i} className="animate-pulse">
-                      <td colSpan={4} className="px-8 py-6"><div className="h-10 bg-slate-100 rounded-xl w-full" /></td>
+                      <td colSpan={6} className="px-8 py-6"><div className="h-10 bg-slate-100 rounded-xl w-full" /></td>
                     </tr>
                   ))
                 ) : (

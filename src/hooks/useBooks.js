@@ -14,6 +14,9 @@ export default function useBooks() {
   // ---- CATEGORY Filter ----
   const [selectedCategory, setSelectedCategory] = useState("");
 
+  // ---- Book Filter------
+  const [selectedBook, setSelectedBook] = useState("");
+
   // ---- UI ----
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -22,7 +25,9 @@ export default function useBooks() {
   const [formData, setFormData] = useState({
     title: "",
     author:"",
-    category_id: ""
+    category_id: "",
+    status:"",
+    quantity: ""
   });
 
 
@@ -71,9 +76,11 @@ export default function useBooks() {
       form.append("title", formData.title);
       form.append("author", formData.author);
       form.append("category_id", formData.category_id);
-      if (formData.image) form.append("image", formData.image); // important!
+      form.append("quantity", Number(formData.quantity));
+      form.append("status", formData.status);
+      if (formData.image) form.append("image", formData.image);
 
-      await createBookApi(formData);
+      await createBookApi(form);
 
       await fetchBooks(page);
 
@@ -90,12 +97,23 @@ export default function useBooks() {
   };
 
 
-  // UPDATE CATEGORY
+  // UPDATE BOOK
   const updateBook = async (id) => {
     try {
       setActionLoading(true);
 
-      await updateBooksApi(id,formData);
+      const form = new FormData();
+      form.append("title", formData.title);
+      form.append("author", formData.author);
+      form.append("category_id", formData.category_id);
+      form.append("status", formData.status);
+      
+      console.log('s: ',formData.status);
+      console.log('q: ',formData.quantity);
+      form.append("quantity",formData.quantity);
+      if (formData.image) form.append("image", formData.image);
+      console.log(form.quantity);
+      await updateBooksApi(id,form);
 
       await fetchBooks(page);
 
@@ -155,6 +173,9 @@ export default function useBooks() {
 
     selectedCategory,
     setSelectedCategory,
+
+    selectedBook,
+    setSelectedBook,
 
     loading,
     actionLoading,

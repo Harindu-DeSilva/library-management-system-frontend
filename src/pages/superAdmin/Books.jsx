@@ -7,13 +7,16 @@ import {
   LibraryBigIcon as Library,
   Search, 
   AlertCircle,
+  EditIcon,
+  Trash2,
+  BookOpen,
   Tags,
   User2,
   X,CheckCircle2,Loader2,
   Book,
   ChevronLeft, 
   ChevronRight, 
-  Clock, 
+  Camera, 
 } from "lucide-react";
 import useBooks from "../../hooks/useBooks";
 import useCategories from "../../hooks/useCategories";
@@ -47,16 +50,21 @@ export default function Books() {
   const [loading, setLoading] = useState(false);
   
   const [deleteBookId, setDeleteBookId] = useState(null);
+  const [selectedBookId, setSelectedBookId] = useState("");
 
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [errorCreateMessage, setErrorCreateMessage] = useState("");
+  const [errorUpdateMessage, setErrorUpdateMessage] = useState("");
   const [errorDeleteMessage, setErrorDeleteMessage] = useState("");
 
   // -------- FETCH BOOKS --------
-  const { page, setPage, totalPages, totalBooks, pageSize, books, catLoading,formData, setFormData,catError, selectedCategory, setSelectedCategory, createBook, deleteBook } = useBooks();
+  const { page, setPage, totalPages, totalBooks, pageSize, books, catLoading,formData, setFormData,catError, selectedCategory, selectedBook,setSelectedBook,setSelectedCategory, createBook, updateBook,deleteBook } = useBooks();
 
 
   const {  categories, selectedLibrary, setSelectedLibrary } = useCategories();
+
+  const [imagePreview, setImagePreview] = useState(user?.image);
   
 
   // -------- FETCH LIBRARIES --------
@@ -69,7 +77,7 @@ export default function Books() {
 
 
 
-    // ---------------- CREATE USER SUBMIT ----------------
+    // ---------------- CREATE BOOK SUBMIT ----------------
   const onSubmitCreate = async (e) => {
     e.preventDefault();
     setErrorCreateMessage("");
@@ -79,6 +87,44 @@ export default function Books() {
       setShowCreateModal(false);
     } else {
       setErrorCreateMessage(res?.message || "Error creating user");
+    }
+  };
+
+
+  // -----------update book------------
+  const onSubmitUpdate = async (e) => {
+    e.preventDefault();
+
+    try {
+      setLoading(true);
+      setErrorUpdateMessage("");
+      const res = await updateBook(selectedBookId);
+
+      if(res?.success){
+        setShowUpdateModal(false);
+      }else{
+        setErrorUpdateMessage(res?.message || "Error updating book");
+      }
+
+    } catch (err) {
+      setErrorUpdateMessage(err?.message || "update failed!");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+
+  // Handle Image Upload
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+        // Here you would typically call your upload API
+        console.log("File ready for upload:", file.name);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -110,10 +156,10 @@ export default function Books() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
              { 
-              label: `Categories`, 
+              label: `Books`, 
               value:  books.length,
-              icon: <Tags className="text-amber-600" />, 
-              bg: 'bg-amber-50' 
+              icon: <Book className="text-blue-600" />, 
+              bg: 'bg-blue-50' 
           },
           
           ].map((stat, i) => (
@@ -139,7 +185,7 @@ export default function Books() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
               <input
                 type="text"
-                placeholder="Search by name or email..."
+                placeholder="Search by name..."
                 className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-400 font-medium shadow-sm"
               />
             </div>
@@ -216,12 +262,13 @@ export default function Books() {
               <thead>
                 <tr className="text-slate-400 text-xs font-bold uppercase tracking-widest border-b border-slate-50">
                   <th className="px-8 py-5">Book Identity</th>
-                  <th className="px-8 py-5">author</th>
-                  <th className="px-6 py-5">category id</th>
-                  <th className="px-6 py-5">library id</th>
+                  <th className="px-6 py-5">category</th>
+                  <th className="px-6 py-5">library</th>
+                  <th className="px-6 py-5">quantity</th>
                   <th className="px-6 py-5">status</th>
-                  <th className="px-6 py-5">Created Time</th>
+                  {user.role === "admin" &&(
                   <th className="px-6 py-5 text-right">actions</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -229,7 +276,7 @@ export default function Books() {
                 {loading ? (
                   Array(3).fill(0).map((_, i) => (
                     <tr key={i} className="animate-pulse">
-                      <td colSpan={4} className="px-8 py-6">
+                      <td colSpan={6} className="px-8 py-6">
                         <div className="h-10 bg-slate-100 rounded-xl w-full" />
                       </td>
                     </tr>
@@ -238,11 +285,11 @@ export default function Books() {
                   ) : books.length === 0 ? (
 
                     <tr>
-                      <td colSpan={7} className="px-8 py-10 text-center">
+                      <td colSpan={6} className="px-8 py-10 text-center">
                         <div className="flex flex-col items-center gap-2 text-slate-500">
                           <AlertCircle className="w-6 h-6 text-slate-400" />
                           <p className="font-semibold">
-                            {catError || "No categories found"}
+                            {catError || "No books found"}
                           </p>
                         </div>
                       </td>
@@ -259,26 +306,26 @@ export default function Books() {
                           </div>
                           <div>
                             <p className="font-bold text-slate-900">{book.title}</p>
-                            <p className="text-xs text-slate-400 font-medium">{book.id}</p>
+                            <p className="text-xs text-slate-400 font-medium">{book.author}</p>
                           </div>
                         </div>
                       </td> 
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-2 text-slate-600 font-medium text-sm">
-                          <IdCardLanyardIcon className="w-4 h-4 text-slate-300" />
-                          {book.author}
+                          <Tags className="w-4 h-4 text-slate-300" />
+                          {categories.find(c => c.id === book.category_id)?.category_name || "N/A"}
                         </div>
                       </td>
                       <td className="px-6 py-5">
-                        <div className="flex items-center gap-2 text-slate-600 font-medium text-sm">
-                          <IdCardLanyardIcon className="w-4 h-4 text-slate-300" />
-                          {book.category_id}
+                        <div className="flex items-center  text-slate-600 font-medium text-sm">
+                          <BookOpen className="w-4 h-4 text-slate-300" />
+                          {libraries.find(l => l.id === book.library_id)?.name || "N/A"}
                         </div>
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex items-center  text-slate-600 font-medium text-sm">
                           <IdCardLanyardIcon className="w-4 h-4 text-slate-300" />
-                          {book.library_id}
+                          {book.quantity}
                         </div>
                       </td>
                       <td className="px-6 py-5">
@@ -287,12 +334,33 @@ export default function Books() {
                           {book.status}
                         </div>
                       </td>
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-2 text-slate-600 font-medium text-sm">
-                          <Clock className="w-4 h-4 text-slate-300" />
-                          {format(new Date(book.createdAt), "dd MMM yyyy, HH:mm")}
-                        </div>
-                      </td>
+                      {user.role === "admin" && (
+                        <td className="px-8 py-5 text-right">
+                          <button
+                            onClick={() => {
+                              setSelectedBookId(book.id);
+                              setFormData({
+                                image:book.image,
+                                title: book.title,
+                                author:book.author,
+                                category_id:book.category_id,
+                                quantity:book.quantity,
+                                status:book.status
+                              });
+                              setShowUpdateModal(true);
+                            }}
+                            className="p-2 text-slate-300 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
+                          > 
+                          < EditIcon className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => setDeleteBookId(book.id)}
+                           className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))
                 )}
@@ -303,7 +371,7 @@ export default function Books() {
           {/* Styled Pagination */}
           <div className="px-8 py-6 border-t border-slate-50 flex items-center justify-between bg-slate-50/30">
             <p className="text-sm text-slate-500 font-medium">
-              Showing <span className="text-slate-900 font-bold">{(page-1)*pageSize + 1}-{Math.min(page*pageSize, totalBooks)}</span> of <span className="text-slate-900 font-bold">{totalBooks}</span> Categories
+              Showing <span className="text-slate-900 font-bold">{(page-1)*pageSize + 1}-{Math.min(page*pageSize, totalBooks)}</span> of <span className="text-slate-900 font-bold">{totalBooks}</span> Books
             </p>
             <div className="flex gap-2">
               <button
@@ -355,6 +423,19 @@ export default function Books() {
                   className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-600 outline-none transition-all"
                   value={formData.author}
                   onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Quantity</label>
+              <div className="relative group">
+                <User2 className="absolute left-4 top-3.5 w-5 h-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                <input
+                  type="number" placeholder="1"
+                  className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-600 outline-none transition-all"
+                  value={formData.quantity}
+                  onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                   required
                 />
               </div>
@@ -440,7 +521,7 @@ export default function Books() {
                 className="flex-2 py-3 px-8 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
-                <span>Create Staff Account</span>
+                <span>Register new book</span>
               </button>
             </div>
             {errorCreateMessage && (
@@ -451,6 +532,190 @@ export default function Books() {
           </form>
         </Modal>
       )}
+
+
+      {/* update model  */}
+      {showUpdateModal && (
+        <Modal
+          title="Update Book"
+          onClose={() => setShowUpdateModal(false)}
+        >
+          <form onSubmit={onSubmitUpdate} className="space-y-5">
+
+            {/* Profile Image Section */}
+              <div className="relative mt-4 mb-6 flex justify-center">
+                <div className="w-32 h-32 bg-white p-1 rounded-full border-4 border-white shadow-xl relative z-10 overflow-hidden">
+                  <div className="w-full h-full bg-indigo-600 rounded-full flex items-center justify-center text-white text-4xl font-black overflow-hidden">
+                    {imagePreview ? (
+                      <img 
+                        src={imagePreview || formData.image} 
+                        alt="Profile" 
+                        className="w-full h-full object-cover" 
+                      />
+                    ) : (
+                      <span>{user?.name?.charAt(0)}</span>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Functional Upload Button */}
+                <label className="absolute bottom-1 right-1/2 translate-x-12 z-20 cursor-pointer group/cam">
+                  <div className="p-2.5 bg-emerald-500 text-white rounded-full shadow-lg border-2 border-white hover:bg-emerald-600 transition-all active:scale-90 group-hover/cam:scale-110">
+                    <Camera className="w-4 h-4" />
+                  </div>
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={(e) =>{
+                      handleImageChange(e)
+                      setFormData({ ...formData, image: e.target.files[0] })
+                    }
+                    }
+                  />
+                </label>
+              </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
+                Book Title
+              </label>
+
+              <div className="relative group">
+                <Tags className="absolute left-4 top-3.5 w-5 h-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                <input
+                  type="text"
+                  placeholder="e.g. Harry Potter"
+                  className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-600 outline-none transition-all"
+                  value={formData.title}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      title: e.target.value
+                    })
+                  }
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
+                Author
+              </label>
+
+              <div className="relative group">
+                <Tags className="absolute left-4 top-3.5 w-5 h-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                <input
+                  type="text"
+                  placeholder="e.g. J.K.Rowling"
+                  className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-600 outline-none transition-all"
+                  value={formData.author}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      author: e.target.value
+                    })
+                  }
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
+                Quantity
+              </label>
+
+              <div className="relative group">
+                <Tags className="absolute left-4 top-3.5 w-5 h-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                <input
+                  type="number"
+                  placeholder="e.g. 1"
+                  className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-600 outline-none transition-all"
+                  value={formData.quantity}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      quantity: Number(e.target.value)
+                    })
+                  }
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-1 hidden">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
+                Category
+              </label>
+
+              <div className="relative group">
+                <Tags className="absolute left-4 top-3.5 w-5 h-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                <input
+                  type="text"
+                  placeholder="e.g. 1"
+                  className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-600 outline-none transition-all"
+                  value={formData.category_id}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      category_id: e.target.value
+                    })
+                  }
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="relative group">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1"> Select Status</label>
+                <div className="relative group">
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      status: e.target.value
+                    })}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 outline-none transition-all appearance-none cursor-pointer"
+                    required
+
+                  >
+                    <option value="available">Available</option>
+                    <option value="borrowed">Borrowed</option>
+                    <option value="damaged">Damaged</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            {errorUpdateMessage && (
+              <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+                {errorUpdateMessage}
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowUpdateModal(false)}
+                className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-2 py-3 px-8 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2"
+              >
+                {loading
+                  ? <Loader2 className="w-5 h-5 animate-spin" />
+                  : <CheckCircle2 className="w-5 h-5" />}
+                <span>Update</span>
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
 
       {/* ---------- DELETE CONFIRM MODAL ---------- */}
       {deleteBookId && (
