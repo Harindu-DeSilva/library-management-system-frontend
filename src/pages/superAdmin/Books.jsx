@@ -9,7 +9,7 @@ import {
   AlertCircle,
   EditIcon,
   Trash2,
-  BookOpen,
+  BookUserIcon,
   Tags,
   User2,
   X,CheckCircle2,Loader2,
@@ -21,6 +21,8 @@ import {
 import useBooks from "../../hooks/useBooks";
 import useCategories from "../../hooks/useCategories";
 import { useStore } from "../../context/useStore";
+import useUsers from "../../hooks/useUsers";
+import useLends from "../../hooks/useLends";
 
 
 // ---------- ENHANCED MODAL COMPONENT ----------
@@ -51,15 +53,25 @@ export default function Books() {
   
   const [deleteBookId, setDeleteBookId] = useState(null);
   const [selectedBookId, setSelectedBookId] = useState("");
+  const [selectedBookIdForLend, setSelectedBookIdForLend] = useState(null);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showLendingModal, setShowLendingModal] = useState(false);
   const [errorCreateMessage, setErrorCreateMessage] = useState("");
   const [errorUpdateMessage, setErrorUpdateMessage] = useState("");
   const [errorDeleteMessage, setErrorDeleteMessage] = useState("");
+  const [errorLendingMessage, setErrorLendingMessage] = useState("");
 
   // -------- FETCH BOOKS --------
   const { page, setPage, totalPages, totalBooks, pageSize, books, catLoading,formData, setFormData,catError, selectedCategory, selectedBook,setSelectedBook,setSelectedCategory, createBook, updateBook,deleteBook } = useBooks();
+
+  // ---------------- USERS HOOK ----------------
+  const {
+    users,
+  } = useUsers();
+
+  const {actionLoading, formLendingData, setFormLendingData, lendBook,} = useLends();
 
 
   const {  categories, selectedLibrary, setSelectedLibrary } = useCategories();
@@ -77,7 +89,7 @@ export default function Books() {
 
 
 
-    // ---------------- CREATE BOOK SUBMIT ----------------
+  // ---------------- CREATE BOOK SUBMIT ----------------
   const onSubmitCreate = async (e) => {
     e.preventDefault();
     setErrorCreateMessage("");
@@ -128,6 +140,20 @@ export default function Books() {
     }
   };
 
+
+    // ---------------- LENDING BOOK SUBMIT ----------------
+  const onSubmitLending = async (e) => {
+    e.preventDefault();
+    console.log("SUBMIT CLICKED"); 
+    setErrorLendingMessage("");
+    const res = await lendBook(selectedBookIdForLend);
+
+    if (res?.success) {
+      setShowLendingModal(false);
+    } else {
+      setErrorLendingMessage(res?.message || "Error lending book");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#f8fafc] p-4 md:p-8 font-sans">
@@ -263,9 +289,10 @@ export default function Books() {
                 <tr className="text-slate-400 text-xs font-bold uppercase tracking-widest border-b border-slate-50">
                   <th className="px-8 py-5">Book Identity</th>
                   <th className="px-6 py-5">category</th>
-                  <th className="px-6 py-5">library</th>
                   <th className="px-6 py-5">quantity</th>
-                  <th className="px-6 py-5">status</th>
+                  <th className="px-6 py-5">availability</th>
+                  <th className="px-6 py-5">borrowed</th>
+                  <th className="px-6 py-5">damaged</th>
                   {user.role === "admin" &&(
                   <th className="px-6 py-5 text-right">actions</th>
                   )}
@@ -318,12 +345,6 @@ export default function Books() {
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex items-center  text-slate-600 font-medium text-sm">
-                          <BookOpen className="w-4 h-4 text-slate-300" />
-                          {libraries.find(l => l.id === book.library_id)?.name || "N/A"}
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="flex items-center  text-slate-600 font-medium text-sm">
                           <IdCardLanyardIcon className="w-4 h-4 text-slate-300" />
                           {book.quantity}
                         </div>
@@ -331,7 +352,19 @@ export default function Books() {
                       <td className="px-6 py-5">
                         <div className="flex items-center  text-slate-600 font-medium text-sm">
                           <IdCardLanyardIcon className="w-4 h-4 text-slate-300" />
-                          {book.status}
+                          {book.available}
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex items-center  text-slate-600 font-medium text-sm">
+                          <IdCardLanyardIcon className="w-4 h-4 text-slate-300" />
+                          {book.borrowed}
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex items-center  text-slate-600 font-medium text-sm">
+                          <IdCardLanyardIcon className="w-4 h-4 text-slate-300" />
+                          {book.damaged}
                         </div>
                       </td>
                       {user.role === "admin" && (
@@ -345,13 +378,31 @@ export default function Books() {
                                 author:book.author,
                                 category_id:book.category_id,
                                 quantity:book.quantity,
-                                status:book.status
+                                available:book.available,
+                                damaged: book.damaged,
                               });
                               setShowUpdateModal(true);
                             }}
                             className="p-2 text-slate-300 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
                           > 
                           < EditIcon className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedBookIdForLend(book.id);
+                              setFormData({
+                              category_id: book.category_id,
+                              library_id: book.library_id,
+                              quantity: 1,
+                              lend_user_id: "",
+                              due_date: ""
+                              });
+                              setShowLendingModal(true);
+                            }}
+                            title="click here to lend books"
+                           className="p-2 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                          >
+                            <BookUserIcon className="w-5 h-5" />
                           </button>
                           <button
                             onClick={() => setDeleteBookId(book.id)}
@@ -642,6 +693,28 @@ export default function Books() {
                 />
               </div>
             </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
+                damaged
+              </label>
+
+              <div className="relative group">
+                <Tags className="absolute left-4 top-3.5 w-5 h-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                <input
+                  type="number"
+                  placeholder="e.g. 1"
+                  className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-600 outline-none transition-all"
+                  value={formData.damaged}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      damaged: Number(e.target.value)
+                    })
+                  }
+                  required
+                />
+              </div>
+            </div>
             <div className="space-y-1 hidden">
               <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
                 Category
@@ -662,28 +735,6 @@ export default function Books() {
                   }
                   required
                 />
-              </div>
-            </div>
-
-            <div className="relative group">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1"> Select Status</label>
-                <div className="relative group">
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      status: e.target.value
-                    })}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 outline-none transition-all appearance-none cursor-pointer"
-                    required
-
-                  >
-                    <option value="available">Available</option>
-                    <option value="borrowed">Borrowed</option>
-                    <option value="damaged">Damaged</option>
-                  </select>
-                </div>
               </div>
             </div>
             {errorUpdateMessage && (
@@ -752,6 +803,103 @@ export default function Books() {
               </div>
             )}
           </div>
+        </Modal>
+      )}
+
+      {/* ---------- Lending MODAL ---------- */}
+      {showLendingModal && (
+        <Modal
+          title="Book Lending Form"
+          onClose={() => setShowLendingModal(false)}
+        >
+          <form onSubmit={onSubmitLending} className="space-y-5">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
+                Quantity
+              </label>
+
+              <div className="relative group">
+                <Tags className="absolute left-4 top-3.5 w-5 h-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                <input
+                  type="number"
+                  placeholder="e.g. 1"
+                  className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-600 outline-none transition-all"
+                  value={formLendingData.quantity}
+                  onChange={(e) =>
+                    setFormLendingData({
+                      ...formLendingData,
+                      quantity: Number(e.target.value)
+                    })
+                  }
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
+                Due Date
+              </label>
+
+              <div className="relative group">
+                <Tags className="absolute left-4 top-3.5 w-5 h-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                <input
+                  type="date"
+                  placeholder="e.g. 1"
+                  className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-600 outline-none transition-all"
+                  value={formLendingData.due_date}
+                  onChange={(e) =>
+                    setFormLendingData({
+                      ...formLendingData,
+                      due_date: e.target.value
+                    })
+                  }
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Lending User</label>
+              <select
+                value={formLendingData.lend_user_id}
+                onChange={(e) => setFormLendingData({ ...formLendingData, lend_user_id: e.target.value })}
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 outline-none transition-all appearance-none cursor-pointer"
+                required
+                disabled={libLoading}
+
+              >
+                <option value="">{libLoading ? "Loading..." : "Select User"}</option>
+                  {users.map((user) => 
+                    <option key={user.id} value={user.id}>{user.name}</option>
+                  )}
+              </select>
+            </div>
+            {errorLendingMessage && (
+              <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+                {errorLendingMessage}
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowLendingModal(false)}
+                className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-2 py-3 px-8 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2"
+              >
+                {loading
+                  ? <Loader2 className="w-5 h-5 animate-spin" />
+                  : <CheckCircle2 className="w-5 h-5" />}
+                <span>Done</span>
+              </button>
+            </div>
+          </form>
         </Modal>
       )}
 

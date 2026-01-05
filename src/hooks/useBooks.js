@@ -26,7 +26,7 @@ export default function useBooks() {
     title: "",
     author:"",
     category_id: "",
-    status:"",
+    damaged:"",
     quantity: ""
   });
 
@@ -77,7 +77,6 @@ export default function useBooks() {
       form.append("author", formData.author);
       form.append("category_id", formData.category_id);
       form.append("quantity", Number(formData.quantity));
-      form.append("status", formData.status);
       if (formData.image) form.append("image", formData.image);
 
       await createBookApi(form);
@@ -106,11 +105,8 @@ export default function useBooks() {
       form.append("title", formData.title);
       form.append("author", formData.author);
       form.append("category_id", formData.category_id);
-      form.append("status", formData.status);
-      
-      console.log('s: ',formData.status);
-      console.log('q: ',formData.quantity);
       form.append("quantity",formData.quantity);
+      form.append("damaged", formData.damaged)
       if (formData.image) form.append("image", formData.image);
       console.log(form.quantity);
       await updateBooksApi(id,form);
