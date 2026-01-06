@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useStore } from "../context/useStore";
 import { useState } from "react";
-import { BookOpen, Library, Users, Book, Tags, UserCircle, LayoutDashboard, LogOut, Menu, X,ChevronRight,ShieldCheck} from 'lucide-react';
+import { BookOpen, Library, Users, Book, Tags, UserCircle,BookUserIcon, LayoutDashboard, LogOut, Menu, X,ChevronRight,ShieldCheck} from 'lucide-react';
 export default function Sidebar() {
 
   
@@ -20,6 +20,7 @@ export default function Sidebar() {
     "Profile": <UserCircle className="w-5 h-5" />,
     "Home": <LayoutDashboard className="w-5 h-5" />,
     "Library": <BookOpen className="w-5 h-5" />,
+    "Lends": <BookUserIcon className="w-5 h-5" />,
   };
 
 
@@ -36,8 +37,9 @@ export default function Sidebar() {
     admin: [
       { label: "Home", path: "/admin" },
       { label: "Users", path: "/admin/users" },
-      { label: "Books", path: "/admin/books" },
       { label: "Categories", path: "/admin/categories" },
+      { label: "Books", path: "/admin/books" },
+      { label: "Lends", path: "/admin/lends" },
       { label: "Profile", path: "/admin/profile" },
     ],
 

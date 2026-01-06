@@ -390,7 +390,7 @@ export default function Books() {
                           <button
                             onClick={() => {
                               setSelectedBookIdForLend(book.id);
-                              setFormData({
+                              setFormLendingData({
                               category_id: book.category_id,
                               library_id: book.library_id,
                               quantity: 1,
@@ -864,10 +864,9 @@ export default function Books() {
                 onChange={(e) => setFormLendingData({ ...formLendingData, lend_user_id: e.target.value })}
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 outline-none transition-all appearance-none cursor-pointer"
                 required
-                disabled={libLoading}
 
               >
-                <option value="">{libLoading ? "Loading..." : "Select User"}</option>
+                <option value="">{loading ? "Loading..." : "Select User"}</option>
                   {users.map((user) => 
                     <option key={user.id} value={user.id}>{user.name}</option>
                   )}
@@ -890,7 +889,6 @@ export default function Books() {
 
               <button
                 type="submit"
-                disabled={loading}
                 className="flex-2 py-3 px-8 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2"
               >
                 {loading

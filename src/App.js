@@ -13,7 +13,7 @@ import Books from "./pages/superAdmin/Books";
 import Categories from "./pages/superAdmin/Categories";
 import ManageUsers from "./pages/superAdmin/ManageUsers";
 import Profile from "./pages/superAdmin/Profile";
-
+import Lends from "./pages/superAdmin/Lends";
 import AdminHome from "./pages/admin/AdminHome";
 
 import UserHome from "./pages/user/UserHome";
@@ -150,12 +150,22 @@ export default function App() {
           }
         />
 
-         <Route
+        <Route
           path="/admin/books"
           element={
             <Private role="admin">
               <Layout>
                 <Books />
+              </Layout>
+            </Private>
+          }
+        />
+        <Route
+          path="/admin/lends"
+          element={
+            <Private role="admin">
+              <Layout>
+                <Lends />
               </Layout>
             </Private>
           }
