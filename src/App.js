@@ -16,7 +16,6 @@ import Categories from "./pages/layouts/Categories";
 import ManageUsers from "./pages/layouts/ManageUsers";
 import Profile from "./pages/layouts/Profile";
 import Lends from "./pages/layouts/Lends";
-import AdminHome from "./pages/admin/AdminHome";
 
 
 
