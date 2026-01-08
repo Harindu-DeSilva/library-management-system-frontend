@@ -72,13 +72,16 @@ export default function Lends() {
   const [updateLendBookId, setUpdateLendBookId] = useState(null);
   const [page, setPage] = useState(1);
 
+  
+  const [errorLendingMessage, setErrorLendingMessage] = useState("");
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     address: "",
   });
 
-const { 
+  const { 
     actionLoading,
 
     lendBooks,
@@ -88,8 +91,30 @@ const {
     totalLends,
     lendPageSize,
     formLendingData,
-    setFormLendingData,
-    lendBook, } = useLends();
+    setFormLendingData,updateLend } = useLends();
+
+
+  // -----------update Lend------------
+  const onSubmitUpdateLend = async (e) => {
+    e.preventDefault();
+
+    try {
+      setLoading(true);
+      setErrorLendingMessage("");
+      const res = await updateLend(updateLendBookId);
+
+      if(res?.success){
+        setShowLendUpdateModal(false);
+      }else{
+        setErrorLendingMessage(res?.message || "Error updating record");
+      }
+
+    } catch (err) {
+      setErrorLendingMessage(err?.message || "update failed!");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   
 
@@ -226,18 +251,28 @@ const {
                         {getStatusBadge(lendBook.status)}
                       </td>
 
-                      {/* Delete Action */}
+                      {/* Update Action */}
                       <td className="px-8 py-5 text-right">
+                        {lendBook.status !== "RETURNED" && (
                         <button
                           onClick={() => {
                             setUpdateLendBookId(lendBook.id);
+                            setFormLendingData({
+                              book_id:lendBook.book_id,
+                              quantity: lendBook.quantity,
+                              library_id: lendBook.library_id,
+                              status: lendBook.status,
+                              return_date: lendBook.return_date?.slice(0,10) || new Date().toISOString().slice(0,10)
+                            });
                             setShowLendUpdateModal(true);
+
                           }}
                           className="p-2.5 text-slate-300 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all active:scale-90"
                           title="Update Record"
                         >
                           <EditIcon className="w-5 h-5" />
                         </button>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -274,23 +309,29 @@ const {
         </div>
       </div>
 
-      {/* ---------- CREATE MODAL ---------- */}
+      {/* ---------- LEND UPDATE MODAL ---------- */}
       {showLendUpdateModal && (
-        <Modal title="Register New Staff" onClose={() => setShowLendUpdateModal(false)}>
-          <form className="space-y-5">
+        <Modal title="Update Lend Records" onClose={() => setShowLendUpdateModal(false)}>
+          <form className="space-y-5" onSubmit={onSubmitUpdateLend}>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Returning Date</label>
-              <div className="relative group">
-                <LibraryIcon className="absolute left-4 top-3.5 w-5 h-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
-                <input
-                  type="date" placeholder="e.g. Knowledge Tree"
-                  className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-600 outline-none transition-all"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-              </div>
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Status</label>
+              <select
+                value={formLendingData.status}
+                onChange={(e) => setFormLendingData({ ...formLendingData, status: e.target.value })}
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-50 outline-none transition-all appearance-none cursor-pointer"
+                required
+              >
+                <option value="BORROWED">BORROWED</option>
+                <option value="RETURNED">RETURNED</option>
+                <option value="OVERDUE">OVERDUE</option>
+              </select>
             </div>
+
+            {errorLendingMessage && (
+              <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+                {errorLendingMessage}
+              </div>
+            )}
 
             <div className="flex gap-3 pt-4">
               <button
@@ -304,7 +345,7 @@ const {
                 className="flex-2 py-3 px-8 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
-                <span>Create Library</span>
+                <span>Update</span>
               </button>
             </div>
           </form>

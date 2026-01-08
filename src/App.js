@@ -3,20 +3,21 @@ import { useStore } from "./context/useStore";
 import { useEffect } from "react";
 
 import LoginPage from "./pages/LoginPage";
+import SendForgetPasswordCode from "./pages/SendForgetPasswordCode";
+import ForgetPassword from "./pages/ForgetPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ErrorPage from "./pages/ErrorPage";
 import Layout from './components/Layout';
 
-import SuperAdminHome from "./pages/superAdmin/SuperAdminHome";
-import ManageLibraries from "./pages/superAdmin/ManageLibraries";
-import Books from "./pages/superAdmin/Books";
-import Categories from "./pages/superAdmin/Categories";
-import ManageUsers from "./pages/superAdmin/ManageUsers";
-import Profile from "./pages/superAdmin/Profile";
-import Lends from "./pages/superAdmin/Lends";
+import SuperAdminHome from "./pages/layouts/SuperAdminHome";
+import ManageLibraries from "./pages/layouts/ManageLibraries";
+import Books from "./pages/layouts/Books";
+import Categories from "./pages/layouts/Categories";
+import ManageUsers from "./pages/layouts/ManageUsers";
+import Profile from "./pages/layouts/Profile";
+import Lends from "./pages/layouts/Lends";
 import AdminHome from "./pages/admin/AdminHome";
 
-import UserHome from "./pages/user/UserHome";
 
 
 
@@ -36,7 +37,7 @@ function Private({ children, role }) {
   if (!user.oneTime && window.location.pathname === "/reset-password") {
     if (user.role === "superAdmin") return <Navigate to="/super-admin" />;
     if (user.role === "admin") return <Navigate to="/admin" />;
-    return <Navigate to="/dashboard" />;
+    return <Navigate to="/404-error" />;
   }
 
    // Role-based protection (skip for 404 page)
@@ -60,6 +61,10 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LoginPage />} />
+
+        <Route path="/send-forget-code" element={<SendForgetPasswordCode />} />
+
+        <Route path="/forget-password" element={<ForgetPassword />} />
 
         <Route
           path="/reset-password"
@@ -144,7 +149,7 @@ export default function App() {
           element={
             <Private role="admin">
               <Layout>
-                <AdminHome />
+                <SuperAdminHome />
               </Layout>
             </Private>
           }
@@ -200,18 +205,6 @@ export default function App() {
             <Private role="admin">
               <Layout>
                 <ManageUsers />
-              </Layout>
-            </Private>
-          }
-        />
-
-        {/* user routes  */}
-        <Route
-          path="/dashboard"
-          element={
-            <Private role="user">
-              <Layout>
-                <UserHome />
               </Layout>
             </Private>
           }

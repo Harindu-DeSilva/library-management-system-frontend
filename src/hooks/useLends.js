@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { fetchAllLendBooksApi, lendBookApi } from "../api/lendApi";
+import { fetchAllLendBooksApi, lendBookApi, updateLendRecordApi } from "../api/lendApi";
 import { getBooksByCategoryApi } from "../api/bookApi";
 
 export default function useLends(page = 1, pageSize = 10) {
@@ -22,7 +22,9 @@ export default function useLends(page = 1, pageSize = 10) {
     library_id:"",
     quantity: "",
     lend_user_id:"",
-    due_date: ""
+    due_date: "",
+    return_date:"",
+    book_id:""
   });
 
 
@@ -75,6 +77,26 @@ export default function useLends(page = 1, pageSize = 10) {
   };
 
 
+  const updateLend = async (id) => {
+      try {
+        setActionLoading(true);
+  
+        await updateLendRecordApi(id,formLendingData);
+  
+        return { success: true };
+  
+      } catch (err) {
+        return {
+          success: false,
+          message: err.response?.data?.message || err.message
+        };
+      } finally {
+        setActionLoading(false);
+      }
+    };
+  
+
+
   return {
 
     loading,
@@ -89,5 +111,6 @@ export default function useLends(page = 1, pageSize = 10) {
     formLendingData,
     setFormLendingData,
     lendBook,
+    updateLend,
   };
 }

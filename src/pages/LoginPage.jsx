@@ -153,7 +153,7 @@ export default function LoginPage() {
                 </div>
 
                 <Link
-                  to="/forgot-password"
+                  to="/send-forget-code"
                   className="text-xs font-bold text-indigo-600 hover:text-indigo-500 transition-colors"
                 >
                   Forgot Password?

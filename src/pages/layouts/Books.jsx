@@ -230,7 +230,7 @@ export default function Books() {
                   onChange={(e) => setSelectedLibrary(e.target.value)}
                   className="w-full pl-11 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all cursor-pointer appearance-none font-medium text-slate-700 shadow-sm"
                 >
-                   {user.role === "superAdmin" && (
+                  {user.role === "superAdmin" && (
                   <>
                   <option value="">All Library Branches</option>
                   
@@ -387,6 +387,7 @@ export default function Books() {
                           > 
                           < EditIcon className="w-5 h-5" />
                           </button>
+                          {book.available !== 0 &&(
                           <button
                             onClick={() => {
                               setSelectedBookIdForLend(book.id);
@@ -404,6 +405,7 @@ export default function Books() {
                           >
                             <BookUserIcon className="w-5 h-5" />
                           </button>
+                          )}
                           <button
                             onClick={() => setDeleteBookId(book.id)}
                            className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"

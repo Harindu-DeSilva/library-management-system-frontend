@@ -181,7 +181,6 @@ export default function ManageLibraries() {
                           </div>
                           <div>
                             <p className="font-bold text-slate-900">{library.name}</p>
-                            <p className="text-xs text-slate-400 font-medium">{library.id}</p>
                           </div>
                         </div>
                       </td> 

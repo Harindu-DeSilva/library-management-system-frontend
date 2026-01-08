@@ -9,3 +9,7 @@ export const updatePasswordApi = (data) => api.patch("/auth/update-password", da
 export const logoutApi = () => api.post("/auth/logout");
 
 export const meApi = () => api.get("/auth/me");
+
+export const sendVerificationCodeApi = (data) => api.post('/auth/send-verification-code', data); 
+
+export const verifyVerificationCodeApi = (data) => api.post('/auth/verify-verification-code', data); 

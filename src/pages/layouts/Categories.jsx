@@ -262,7 +262,6 @@ export default function Categories() {
                           </div>
                           <div>
                             <p className="font-bold text-slate-900">{category.category_name}</p>
-                            <p className="text-xs text-slate-400 font-medium">{category.id}</p>
                           </div>
                         </div>
                       </td> 
