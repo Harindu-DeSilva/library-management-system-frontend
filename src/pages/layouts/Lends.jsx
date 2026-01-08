@@ -1,19 +1,15 @@
 import React, { useState} from "react";
 import { format } from "date-fns";
 import { 
-  Trash2, 
-  Mail, 
   Library as LibraryIcon, 
   Search,  
   Book, 
   Layers,
   Tag,
-  Calendar,
   EditIcon,
   BookUserIcon,
   ChevronLeft, 
-  ChevronRight, 
-  LocationEdit,
+  ChevronRight,    
   X,
   Clock, 
   CheckCircle2,
@@ -72,26 +68,19 @@ export default function Lends() {
   const [updateLendBookId, setUpdateLendBookId] = useState(null);
   const [page, setPage] = useState(1);
 
-  
   const [errorLendingMessage, setErrorLendingMessage] = useState("");
 
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    address: "",
-  });
 
   const { 
-    actionLoading,
-
+    search,
+    setSearch,
     lendBooks,
     lendLoading,
-    lendError,
     totalLendPages,
     totalLends,
     lendPageSize,
     formLendingData,
-    setFormLendingData,updateLend } = useLends();
+    setFormLendingData,updateLend } = useLends(page);
 
 
   // -----------update Lend------------
@@ -163,6 +152,11 @@ export default function Lends() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1); // reset pagination
+                }}
                 placeholder="Search by name or email..."
                 className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all"
               />

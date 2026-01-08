@@ -3,7 +3,16 @@ import api from "./axios";
 
 export const createLibraryApi = (data) => api.post("/superAdmin/library", data);
 
-export const getLibrariesApi = (page = 1, limit = 10) => api.get(`/superAdmin/library?page=${page}&limit=${limit}`);
+export const getLibrariesApi = ({page = 1,limit = 10,search = ""}) => {
+  return api.get("/superAdmin/library", {
+    params: {
+      page,
+      limit,
+      search
+    }
+  });
+};
+
 
 export const getLibraryByIdApi = (id) => api.get(`/superAdmin/library/${id}`);
 

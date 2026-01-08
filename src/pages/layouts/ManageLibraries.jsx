@@ -43,11 +43,13 @@ function Modal({ title, children, onClose }) {
 
 export default function ManageLibraries() {
 
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [deleteLibraryId, setDeleteLibraryId] = useState(null);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+
 
   const [formData, setFormData] = useState({
     name: "",
@@ -56,7 +58,14 @@ export default function ManageLibraries() {
   });
 
   // -------- FETCH LIBRARIES --------
-  const {  libraries, libLoading, libError, totalPages, totalLibraries, pageSize, fetchLibraries } = useLibraries();
+  const {
+    libraries,
+    totalPages,
+    totalLibraries,
+    pageSize,
+    fetchLibraries
+  } = useLibraries(page, search);
+
 
   // -------- CREATE LIBRARY --------
   const handleSubmit = async (e) => {
@@ -80,7 +89,6 @@ export default function ManageLibraries() {
       fetchLibraries();
     } catch (err) {
       console.error(err.response?.data || err.message);
-      alert(err.response?.data?.message || "Failed to create Library");
     }
   };
 
@@ -91,7 +99,6 @@ export default function ManageLibraries() {
       fetchLibraries();
     } catch (err) {
       console.error(err.response?.data || err.message);
-      alert(err.response?.data?.message || "Failed to delete Library");
     }
   };
   return (
@@ -145,6 +152,11 @@ export default function ManageLibraries() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1); // reset pagination
+                }}
                 placeholder="Search by name or email..."
                 className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all"
               />
@@ -247,7 +259,7 @@ export default function ManageLibraries() {
 
       {/* ---------- CREATE MODAL ---------- */}
       {showCreateModal && (
-        <Modal title="Register New Staff" onClose={() => setShowCreateModal(false)}>
+        <Modal title="Register New Library" onClose={() => setShowCreateModal(false)}>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Name</label>

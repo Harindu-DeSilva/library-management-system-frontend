@@ -6,7 +6,6 @@ import {
   IdCardLanyardIcon,
   ChevronDown,
   LibraryBigIcon as Library,
-  Search, 
   AlertCircle,
   Tags,
   Trash2,
@@ -18,7 +17,6 @@ import {
   Users, 
   CheckCircle2,
   Loader2,
-  Edit2
 } from "lucide-react";
 import useCategories from "../../hooks/useCategories";
 import useUsers from "../../hooks/useUsers";
@@ -66,14 +64,14 @@ export default function Categories() {
 
 
   // -------- FETCH CATEGORIES --------
-  const { page, setPage, totalPages, totalCategories, pageSize, categories, catLoading, catError, selectedLibrary,formData,
-    setFormData, fetchCategories,
+  const { page, setPage, totalPages, totalCategories, pageSize, categories,  catError, selectedLibrary,formData,
+    setFormData, 
     createCategory,
     deleteCategory, setSelectedLibrary, updateCategory } = useCategories();
 
 
   // -------- FETCH LIBRARIES --------
-  const { libraries, libLoading, libError } = useLibraries();
+  const { libraries, } = useLibraries();
 
     // ---------------- CREATE CATEGORY SUBMIT ----------------
   const onSubmitCreate = async (e) => {
@@ -160,18 +158,8 @@ export default function Categories() {
         {/* Data Table Section */}
         <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
           <div className="p-6 border-b border-slate-50 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/50">
-      
-          {/* Search Input - Left Side */}
-          <div className="relative w-full max-w-sm">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-            <input
-              type="text"
-              placeholder="Search by name..."
-              className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-400 font-medium shadow-sm"
-            />
-          </div>
 
-            {/* Library Selection - Right Side */}
+          {/* Library Selection - Right Side */}
           <div className="flex items-center gap-3 w-full md:w-auto">
             <span className="hidden lg:block text-xs font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
               Filter By:

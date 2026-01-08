@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { 
   User, 
   Mail, 
@@ -8,7 +8,6 @@ import {
   Camera, 
   CheckCircle2, 
   X, 
-  BookOpen,
   Lock,
   ArrowRight
 } from "lucide-react";
